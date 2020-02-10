@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>MyList</title>
+
+	
+	<link rel="shortcut icon" href="img/favicon.png" />
+    <!-- Bootstrap Core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Theme CSS -->
+    <link href="css/freelancer.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+	
+	<script
+		src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js">
+	</script>
+	
+	<script src="https://www.gstatic.com/firebasejs/3.9.0/firebase.js"></script>
+	
+	<script>
+			// Initialize Firebase
+			var config = {
+				apiKey: "AIzaSyAqG1VHDmZhx8IrwhFaAsA7tesDIBZNjDk",
+				authDomain: "trial-98fb4.firebaseapp.com",
+				databaseURL: "https://trial-98fb4.firebaseio.com",
+				projectId: "trial-98fb4",
+				storageBucket: "trial-98fb4.appspot.com",
+				messagingSenderId: "760981100946"
+			};
+			firebase.initializeApp(config);
+		</script>
+		
+		
+		
+		
+		<script>
+			<!--- FIREBASE CONNECTION AND JQUERY CODE--->
+			
+			$( document ).ready(function() {
+				
+				var database = firebase.database();
+				var currentuid;
+				var flag1 = 0;
+				var flag2 = 0;
+				
+				<!--- WHEN USER CLICKS LOGIN REVEAL LOGIN SECTION--->
+				
+				$("#lognav").click(function() {
+					if(!$('#logarea').is(':visible')){
+						flag1 = 1;
+					}
+					else{
+						flag2 = 0;
+					}
+					
+					$("#regarea").hide();
+					
+					if( flag1 === 1){
+						$("#logarea").show();
+						$('html, body').animate({
+							scrollTop: $("#logarea").offset().top
+						}, 500);
+					}
+				});
+				<!--- END OF LOGIN REVEAL--->
+				
+				<!--- WHEN USER CLICKS SIGN UP REVEAL REGISTER SECTION--->
+				$("#regnav").click(function() {
+					if(!$('#regarea').is(':visible')){
+						flag2 = 1;
+					}
+					else{
+						flag1 = 0;
+					}
+					
+					$("#logarea").hide();
+					
+					if( flag2 === 1){
+						$("#regarea").show();
+						$('html, body').animate({
+							scrollTop: $("#regarea").offset().top
+						}, 500);
+					}
+				});
+				
+				<!--- END OF REGISTER REVEAL--->
+				
+				
+				<!--- REGISTERING --->
+				
+				$("#register").click(function() {
+				
+					var name1 = $("#name").val();
+					var sname1 = $("#surname").val();
+					var bday1 = $("#bday").val();
+					var email1 = $("#email").val();
+					var password1 = $("#pass").val();
+					
+					
+					
+					firebase.auth().createUserWithEmailAndPassword(email1,
+					password1).then(function(user) {
+						var user = firebase.auth().currentUser;
+						var uid = user.uid;		
+						
+						writeUserData(uid);
+						displayUserData(uid);
+						console.log("Successful registration with uid : " + uid );
+						
+						$('html, body').animate({
+							scrollTop: $("#portfolio").offset().top
+						}, 1000);
+						
+					},function(error) {})
+					
+					
+					
+					function writeUserData(cuid){
+					
+						var ref = database.ref();
+						var usersRef = ref.child("users");
+						var usersRef = usersRef.child(cuid);
+						//var newUsersRef = usersRef.push();
+					
+						//newUsersRef
+						usersRef.set({
+							name: name1,
+							sname: sname1,
+							bday: bday1,
+							email: email1,
+							password: password1
+						});
+					}
+					
+					function displayUserData(id){
+						
+						var ref = database.ref();
+						var usersRef = ref.child("users");
+						var usersRef = usersRef.child(id);
+						
+						//usersRef = usersRef.child();
+						
+						return usersRef.once('value').then(function(snapshot) {
+							var username = snapshot.val().name;
+							var surname = snapshot.val().sname;
+							
+							$("#disusername").html(username + " " + surname);
+							
+							
+						});
+					}
+				});
+				
+				<!---END OF REGISTERING --->
+				
+				
+				<!--- LOGIN --->
+				$("#login").click(function() {
+					var email = $("#logmail").val();
+					var password = $("#logpass").val();
+				
+					firebase.auth().signInWithEmailAndPassword(email, password).then(function(user) {
+						var user = firebase.auth().currentUser;
+						var uid = user.uid;
+						displayUserData(uid);
+						refreshList(uid);
+						console.log("Successful login with uid : " + uid );
+						
+						$('html, body').animate({
+							scrollTop: $("#portfolio").offset().top
+						}, 1000);
+						
+						
+					},function(error) {})
+					
+					function displayUserData(id){
+						
+						var ref = database.ref();
+						var usersRef = ref.child("users");
+						var usersRef = usersRef.child(id);
+						
+						//usersRef = usersRef.child();
+						
+						return usersRef.once('value').then(function(snapshot) {
+							var username = snapshot.val().name;
+							var surname = snapshot.val().sname;
+							
+							$("#disusername").html(username + " " + surname);
+							
+							
+						});
+					}
+					
+					function refreshList(id){
+						var ref = database.ref();
+						var usersRef = ref.child("users");
+						var usersRef = usersRef.child(id);
+						var usersRef = usersRef.child("list");
+						
+						usersRef.once("value")
+							.then(function(snapshot) {
+								snapshot.forEach(function(childSnapshot) {
+								
+								
+								// key will be "ada" the first time and "alan" the second time
+								var key = childSnapshot.key;
+								// childData will be the actual contents of the child
+								var childData = childSnapshot.val().item;
+								
+								$('#list').append("<li id = " + key + ">"+ childData + "</li>");
+								
+								$("#list li").addClass("list-group-item");
+							});
+						});
+					}
+					
+				});
+				<!--- LOGIN END --->
+				
+				<!--- ENTER LIST ITEM --->
+				$("#todo").click(function() {
+					var user = firebase.auth().currentUser;
+					var uid = user.uid;
+					var item1 = $("#thing").val();
+					
+					$("#thing").val("");
+					
+					if(user){
+						var ref = database.ref();
+						var usersRef = ref.child("users");
+						var usersRef = usersRef.child(uid);
+						//
+						usersRef = usersRef.child("list");
+						//
+						var newUsersRef = usersRef.push();
+						var newID = newUsersRef.getKey();
+						
+						newUsersRef.set({
+							item: item1
+						});
+						
+						newUsersRef.once("child_added", function(snapshot) {
+							var newItem = snapshot.val();
+							$('#list').append("<li id = " + newID + ">"+ newItem + "</li>");
+							
+							$("#list li").addClass("list-group-item");
+						});
+						
+					}
+					else{
+						alert("You need to sign in first");
+					}
+				});
+				<!--- ENTER LIST ITEM END --->
+				
+				<!--- DELETE LIST ITEM --->
+				
+				$("ul#list").click(function(event) {
+					var id = event.target.id;
+					var user = firebase.auth().currentUser;
+					var uid = user.uid;
+					
+					var ref = database.ref();
+					var usersRef = ref.child("users");
+					
+					var usersRef = usersRef.child(uid);
+					var usersRef = usersRef.child("list");
+					var usersRef = usersRef.child(id);
+					
+					usersRef.remove();
+					
+					$('#' + id).remove();
+				});
+				
+				<!--- DELETE LIST ITEM END --->
+				
+				<!--- LOGOUT --->
+				$("#out").click(function() {
+					firebase.auth().signOut().catch(function(error) {
+						var errorCode = error.code;
+						var errorMessage = error.message;
+						console.log(errorMessage);
+					});
+					
+					$("#disusername").html("Unsigned");
+					$('#list').empty();
+				});
+				<!--- END OF LOGOUT --->
+				
+				<!--- HIDE/SHOW LOGOUT BUTTON --->
+				firebase.auth().onAuthStateChanged(function(user) {
+					if (user) {
+						$("#out").show();
+					} else {
+						$("#out").hide();
+					}
+				});
+				<!--- END --->
+			
+			<!--- END OF FIREBASE CONNECTION AND JQUERY CODE --->
+			});
+		</script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body id="page-top" class="index">
+<div id="skipnav"><a href="#maincontent">Skip to main content</a></div>
+
+    <!-- Navigation -->
+    <nav id="mainNav" class="navbar navbar-default navbar-fixed-top navbar-custom">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header page-scroll">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
+                </button>
+                <a class="navbar-brand" href="#page-top">My List</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="hidden">
+                        <a href="#page-top"></a>
+                    </li>
+                    <li class="page-scroll">
+                        <a href="#portfolio">My List</a>
+                    </li>
+                    <li class="page-scroll">
+                        <a href="#about">About</a>
+                    </li>
+                    <li class="page-scroll">
+                        <a href="#contact">Contact</a>
+                    </li>
+					<li id = "lognav" class="page-scroll">
+						<a href="#logarea">Log In</a>
+					</li>
+					<li id = "regnav" class="page-scroll">
+						<a href="#regarea">Sign Up</a>
+					</li>
+					<li>
+						<a id = "disusername">Unsigned</a>
+					</li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container-fluid -->
+    </nav>
+
+    <!-- Header -->
+    <header>
+        <div class="container" id="maincontent" tabindex="-1">
+            <div class="row">
+                <div class="col-lg-12">
+                    <img id = "im" class="img-responsive" src="img/profile.png" alt="">
+                    <div class="intro-text">
+                        <h1 class="name">My List</h1>
+                        <hr class="star-light">
+                        <span class="skills">Never forget about a thing again! - Keep everything under control!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+		<!--- SIGN UP SECTION --->
+		<section id = "regarea">
+			<div class="form-horizontal">
+				<p><h3>Register</h3></p>
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="name" >Name: </label> 
+					<div class="col-sm-5">
+						<input type="text" class="form-control" id="name" placeholder="Enter your Name">
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="surname">Surname: </label>
+					<div class="col-sm-5">
+						<input type="text" class="form-control" id="surname" placeholder="Enter your Surname">
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="surname">Birthday: </label>
+					<div class="col-sm-5">
+						<input type="text" class="form-control" id="bday" placeholder="Enter your Birthday Date">
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="email">E-mail: </label>
+					<div class="col-sm-5">
+						<input type="email" class="form-control" id="email" placeholder="Enter your E-mail">
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="pass">Password: </label>
+					<div class="col-sm-5">
+						<input type="password" class="form-control" id="pass" placeholder="Enter your Password">
+					</div>
+				</div>
+
+				<button id="register" class="btn btn-default">Register</button>
+			</div>
+		</section>
+		<!--- END OF SIGN UP SECTION --->
+		<!--- LOGIN SECTION --->
+		<section id="logarea">
+			<div class="form-horizontal">
+				<p><h3>Login</h3></p>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="logmail">E-mail: </label>
+					<div class="col-sm-5">
+						<input type="email" class="form-control" id="logmail" placeholder="Enter your log-in E-mail">
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label class="control-label col-sm-4" for="logpass">Password: </label>
+					<div class="col-sm-5">
+						<input type="password" class="form-control" id="logpass" placeholder="Enter your log-in password">
+					</div>
+				</div>
+				
+				
+				<button id="login" class="btn btn-default">Login</button>
+
+				<!---<button id = "out" class="btn btn-default">Log Out</button>--->
+				
+			</div>
+			
+			
+		</section>
+		<!--- END OF LOGIN SECTION --->
+		
+			
+    </header>
+
+    <!-- MYLIST SECTION Section -->
+    <section id="portfolio">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2>My List</h2>
+                    <hr class="star-primary">
+                </div>
+            </div>
+			
+			<div class="col-lg-12 text-center" id = "container">
+				<div id = "container2">
+					<h4>Enter a thing to do:</h4><br>
+					<input id = "thing" type = "text" placeholder="Enter item to your List">
+					<button class="btn btn-default" id = "todo">Add to List</button>
+					<div id = "container3">
+						<ul class="list-group" id = "list">
+				
+						</ul>
+					</div>
+				</div>
+				<button id = "out" class="btn btn-default">Log Out</button>
+				<br>
+			</div>
+            
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="success" id="about">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2>About</h2>
+                    <hr class="star-light">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 col-lg-offset-2">
+                    <p>My List is an app that you can use in order to keep everything under your control. It allows you to enter your jobs at a real time asynchronous list and it will keep them there for you to remember.</p>
+                </div>
+                <div class="col-lg-4">
+                    <p>Use the Log in and Sign up buttons at the navigation bar to enter the app. From there you can add your jobs to your list, and you can remove jobs you just finished by simply clicking on them!</p>
+                </div>
+                <div class="col-lg-8 col-lg-offset-2 text-center">
+                    <a href="#" class="btn btn-lg btn-outline">
+                        <i class="fa fa-download"></i> Download App
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2>Contact Me</h2>
+                    <hr class="star-primary">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2">
+                    <!-- To configure the contact form email address, go to mail/contact_me.php and update the email address in the PHP file on line 19. -->
+                    <!-- The form should work on most web servers, but if the form is not working you may need to configure your web server differently. -->
+                    <form name="sentMessage" id="contactForm" novalidate>
+                        <div class="row control-group">
+                            <div class="form-group col-xs-12 floating-label-form-group controls">
+                                <label for="name">Name</label>
+                                <input type="text" class="form-control" placeholder="Name" id="name" required data-validation-required-message="Please enter your name.">
+                                <p class="help-block text-danger"></p>
+                            </div>
+                        </div>
+                        <div class="row control-group">
+                            <div class="form-group col-xs-12 floating-label-form-group controls">
+                                <label for="email">Email Address</label>
+                                <input type="email" class="form-control" placeholder="Email Address" id="email" required data-validation-required-message="Please enter your email address.">
+                                <p class="help-block text-danger"></p>
+                            </div>
+                        </div>
+                        <div class="row control-group">
+                            <div class="form-group col-xs-12 floating-label-form-group controls">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" class="form-control" placeholder="Phone Number" id="phone" required data-validation-required-message="Please enter your phone number.">
+                                <p class="help-block text-danger"></p>
+                            </div>
+                        </div>
+                        <div class="row control-group">
+                            <div class="form-group col-xs-12 floating-label-form-group controls">
+                                <label for="message">Message</label>
+                                <textarea rows="5" class="form-control" placeholder="Message" id="message" required data-validation-required-message="Please enter a message."></textarea>
+                                <p class="help-block text-danger"></p>
+                            </div>
+                        </div>
+                        <br>
+                        <div id="success"></div>
+                        <div class="row">
+                            <div class="form-group col-xs-12">
+                                <button type="submit" class="btn btn-success btn-lg">Send</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="footer-above">
+            <div class="container">
+                <div class="row">
+                    <div class="footer-col col-md-4">
+                        <h3>Location</h3>
+                        <p>Somewhere Somewhere 56
+                            <br>Somewhere, Somewhere, some Post Code</p>
+                    </div>
+                    <div class="footer-col col-md-4">
+                        <h3>Around the Web</h3>
+                        <ul class="list-inline">
+                            <li>
+                                <a href="#" class="btn-social btn-outline"><span class="sr-only">Facebook</span><i class="fa fa-fw fa-facebook"></i></a>
+                            </li>
+                            <li>
+                                <a href="#" class="btn-social btn-outline"><span class="sr-only">Google Plus</span><i class="fa fa-fw fa-google-plus"></i></a>
+                            </li>
+                            <li>
+                                <a href="#" class="btn-social btn-outline"><span class="sr-only">Twitter</span><i class="fa fa-fw fa-twitter"></i></a>
+                            </li>
+                            <li>
+                                <a href="#" class="btn-social btn-outline"><span class="sr-only">Linked In</span><i class="fa fa-fw fa-linkedin"></i></a>
+                            </li>
+                            <li>
+                                <a href="#" class="btn-social btn-outline"><span class="sr-only">Dribble</span><i class="fa fa-fw fa-dribbble"></i></a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="footer-col col-md-4">
+                        <h3>About MyList</h3>
+                        <p>MyList is a free to use, open app created by <a>Michail Vitoros</a>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-below">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        Copyright &copy; Michail Vitoros 2017
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
+    <div class="scroll-top page-scroll hidden-sm hidden-xs hidden-lg hidden-md">
+        <a class="btn btn-primary" href="#page-top">
+            <i class="fa fa-chevron-up"></i>
+        </a>
+    </div>
+   
+    <!-- jQuery -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+
+    <!-- Contact Form JavaScript -->
+    <script src="js/jqBootstrapValidation.js"></script>
+    <script src="js/contact_me.js"></script>
+
+    <!-- Theme JavaScript -->
+    <script src="js/freelancer.min.js"></script>
+
+</body>
+
+</html>
